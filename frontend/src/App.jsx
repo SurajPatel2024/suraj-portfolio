@@ -101,7 +101,7 @@ const handleSubmit = async (e) => {
       triggerAlert("Project Updated Successfully!", "success");
     } else {
       // ✅ ADD:
-      await axios.post("${API_URL}/api/projects", form, config);
+      await axios.post(`${API_URL}/api/projects`, form, config);
       triggerAlert("Project Added Successfully!", "success");
     }
     setForm({ title: '', description: '', category: 'mern', image: '', link: '' });
