@@ -824,7 +824,7 @@ function App() {
                   <h3 style={{ margin: '0 0 10px 0', color: theme.textMain }}>{project.title}</h3>
                   <p style={{ color: theme.textMuted, fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '15px' }}>{project.description}</p>
                   <a href={project.link} className="view" target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                    Execute Engine <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
+                  Visit Project <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
                   </a>
                   {isAdmin && (
                     <div className="crud-btns" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
