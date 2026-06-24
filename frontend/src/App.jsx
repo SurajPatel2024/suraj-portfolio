@@ -1,16 +1,13 @@
 import axios from 'axios'; 
 import React, { useState, useEffect } from 'react';
 
-// 🟢 VITE ENVIRONMENT FIX: process.env ko hata kar import.meta.env lagaya hai
-const API_URL = import.meta.env.VITE_API_URL ;
  
-const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
-
+const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD ; 
+const API_URL = import.meta.env.VITE_API_URL;
 
 function App() {
   // .env se variables load karein
-  const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD ; 
-  const API_URL = import.meta.env.VITE_API_URL  ;
+
   const [projects, setProjects] = useState([]); 
   const [filter, setFilter] = useState('all');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -48,7 +45,7 @@ function App() {
 
   const fetchProjects = async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await axios.get(`${API_URL}/api/projects`)
       if (res.data) {
         setProjects(res.data);
       }
@@ -67,7 +64,7 @@ function App() {
     e.preventDefault();
     
     // Vite Meta Check
-    const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD || LOCAL_FALLBACK_PWD;
+    const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
 
    if (enteredPassword === MASTER_PWD) {
   setIsAdmin(true);
@@ -94,17 +91,17 @@ const handleLoginClick = () => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD || "Suraj2026";
+  const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD ;
   const config = { headers: { 'admin-password': MASTER_PWD } };
   
   try {
     if (editId) {
       // ✅ EDIT: Ensure editId properly pass ho raha hai
-      await axios.put(`http://localhost:5000/api/projects/${editId}`, form, config);
+      await axios.put(`${API_URL}/api/projects/${editId}`, form, config);
       triggerAlert("Project Updated Successfully!", "success");
     } else {
       // ✅ ADD:
-      await axios.post("http://localhost:5000/api/projects", form, config);
+      await axios.post("${API_URL}/api/projects", form, config);
       triggerAlert("Project Added Successfully!", "success");
     }
     setForm({ title: '', description: '', category: 'mern', image: '', link: '' });
@@ -118,10 +115,10 @@ const handleSubmit = async (e) => {
 
 const handleDelete = async (id) => {
   if (window.confirm("Delete this project?")) {
-    const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD || "Suraj2026";
+    const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD ;
     try {
       // ✅ DELETE: Header saath mein bhej rahe hain
-      await axios.delete(`http://localhost:5000/api/projects/${id}`, {
+      await axios.delete(`${API_URL}/api/projects/${id}`, {
         headers: { 'admin-password': MASTER_PWD }
       });
       triggerAlert("Project Deleted!", "info");
