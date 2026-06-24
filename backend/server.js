@@ -50,5 +50,19 @@ app.delete('/api/projects/:id', authAdmin, async (req, res) => {
 });
 
 
-mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 })
-    .then(() => app.listen(5000, () => console.log("Server running on 5000 and Database connected")));
+const PORT = process.env.PORT || 5000;
+
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
+
+mongoose
+  .connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 })
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error(err);
+  });
