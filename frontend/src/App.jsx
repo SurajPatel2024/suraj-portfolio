@@ -1,27 +1,28 @@
-import axios from 'axios'; 
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 
- 
-const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD ; 
+
+const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
 const API_URL = import.meta.env.VITE_API_URL;
 
 function App() {
   // .env se variables load karein
 
-  const [projects, setProjects] = useState([]); 
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [menuOpen, setMenuOpen] = useState(false);
- const [isAdmin, setIsAdmin] = useState(() => {
-  // Page load hote hi ye check karega
-  const savedAdmin = localStorage.getItem('isAdmin');
-  return savedAdmin === 'true'; 
-});
+  const [isAdmin, setIsAdmin] = useState(() => {
+    // Page load hote hi ye check karega
+    const savedAdmin = localStorage.getItem('isAdmin');
+    return savedAdmin === 'true';
+  });
 
-  
+
   // Custom Login Modal State
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [enteredPassword, setEnteredPassword] = useState('');
-   
+
   // Theme State (Default: Light Mode)
   const [darkMode, setDarkMode] = useState(false);
 
@@ -36,22 +37,27 @@ function App() {
   const [contactData, setContactData] = useState({ name: '', email: '', message: '' });
 
   // Trigger Custom Smooth Toast
-  const triggerAlert = (message, type = 'info') => { 
+  const triggerAlert = (message, type = 'info') => {
     setAlertConfig({ visible: true, message, type });
     setTimeout(() => {
       setAlertConfig({ visible: false, message: '', type: 'info' });
-    }, 4000); 
+    }, 4000);
   };
 
   const fetchProjects = async () => {
+    setLoading(true);
+
     try {
-      const res = await axios.get(`${API_URL}/api/projects`)
+      const res = await axios.get(`${API_URL}/api/projects`);
+
       if (res.data) {
         setProjects(res.data);
       }
     } catch (err) {
-      console.log("Database connection offline. Using empty array safely.");
+      console.log("Database connection offline.");
       setProjects([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,72 +68,72 @@ function App() {
   // Admin Verification Engine
   const handleAdminAuthSubmit = (e) => {
     e.preventDefault();
-    
+
     // Vite Meta Check
     const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
 
-   if (enteredPassword === MASTER_PWD) {
-  setIsAdmin(true);
-  localStorage.setItem('isAdmin', 'true'); // <--- Ye line add karein
-  setShowLoginModal(false);
-  setEnteredPassword('');
-  triggerAlert("Access Granted! Welcome Admin.", "success");
-}
-else {
+    if (enteredPassword === MASTER_PWD) {
+      setIsAdmin(true);
+      localStorage.setItem('isAdmin', 'true'); // <--- Ye line add karein
+      setShowLoginModal(false);
+      setEnteredPassword('');
+      triggerAlert("Access Granted! Welcome Admin.", "success");
+    }
+    else {
       triggerAlert("Authentication Failed! Wrong Password.", "danger");
     }
   };
 
-const handleLoginClick = () => {
-  if (isAdmin) {
-    setIsAdmin(false);
-    localStorage.removeItem('isAdmin'); // <--- Ye line add karein
-    triggerAlert("Logged out from admin control.", "info");
-    return;
-  }
-  setShowLoginModal(true);
-};
-
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD ;
-  const config = { headers: { 'admin-password': MASTER_PWD } };
-  
-  try {
-    if (editId) {
-      // ✅ EDIT: Ensure editId properly pass ho raha hai
-      await axios.put(`${API_URL}/api/projects/${editId}`, form, config);
-      triggerAlert("Project Updated Successfully!", "success");
-    } else {
-      // ✅ ADD:
-      await axios.post(`${API_URL}/api/projects`, form, config);
-      triggerAlert("Project Added Successfully!", "success");
+  const handleLoginClick = () => {
+    if (isAdmin) {
+      setIsAdmin(false);
+      localStorage.removeItem('isAdmin'); // <--- Ye line add karein
+      triggerAlert("Logged out from admin control.", "info");
+      return;
     }
-    setForm({ title: '', description: '', category: 'mern', image: '', link: '' });
-    setEditId(null);
-    fetchProjects();
-  } catch (err) {
-    triggerAlert("Action Failed: " + (err.response?.data?.message || "Check Console"), "danger");
-  }
-};
+    setShowLoginModal(true);
+  };
 
 
-const handleDelete = async (id) => {
-  if (window.confirm("Delete this project?")) {
-    const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD ;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
+    const config = { headers: { 'admin-password': MASTER_PWD } };
+
     try {
-      // ✅ DELETE: Header saath mein bhej rahe hain
-      await axios.delete(`${API_URL}/api/projects/${id}`, {
-        headers: { 'admin-password': MASTER_PWD }
-      });
-      triggerAlert("Project Deleted!", "info");
+      if (editId) {
+        // ✅ EDIT: Ensure editId properly pass ho raha hai
+        await axios.put(`${API_URL}/api/projects/${editId}`, form, config);
+        triggerAlert("Project Updated Successfully!", "success");
+      } else {
+        // ✅ ADD:
+        await axios.post(`${API_URL}/api/projects`, form, config);
+        triggerAlert("Project Added Successfully!", "success");
+      }
+      setForm({ title: '', description: '', category: 'mern', image: '', link: '' });
+      setEditId(null);
       fetchProjects();
     } catch (err) {
-      triggerAlert("Delete Failed: " + (err.response?.data?.message || "Unauthorized"), "danger");
+      triggerAlert("Action Failed: " + (err.response?.data?.message || "Check Console"), "danger");
     }
-  }
-};
+  };
+
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Delete this project?")) {
+      const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
+      try {
+        // ✅ DELETE: Header saath mein bhej rahe hain
+        await axios.delete(`${API_URL}/api/projects/${id}`, {
+          headers: { 'admin-password': MASTER_PWD }
+        });
+        triggerAlert("Project Deleted!", "info");
+        fetchProjects();
+      } catch (err) {
+        triggerAlert("Delete Failed: " + (err.response?.data?.message || "Unauthorized"), "danger");
+      }
+    }
+  };
 
 
   const handleEditSelect = (proj) => {
@@ -144,14 +150,14 @@ const handleDelete = async (id) => {
 
   const handleContactSubmit = (e) => {
     e.preventDefault();
-    
+
     const subject = encodeURIComponent(`New Portfolio Message from ${contactData.name}`);
     const body = encodeURIComponent(
       `Name: ${contactData.name}\n` +
       `Email: ${contactData.email}\n\n` +
       `Message:\n${contactData.message}`
     );
-    
+
     triggerAlert("Redirecting to email application client...", "info");
     setTimeout(() => {
       window.location.href = `mailto:surajpatel2026@zohomail.in?subject=${subject}&body=${body}`;
@@ -164,7 +170,7 @@ const handleDelete = async (id) => {
   const theme = {
     bodyBg: darkMode ? '#121214' : '#f4f4f5',
     textMain: darkMode ? '#ffffff' : '#111215',
-    textMuted: darkMode ? '#cbd5e1' : '#52525b', 
+    textMuted: darkMode ? '#cbd5e1' : '#52525b',
     cardBg: darkMode ? '#1e1f22' : '#ffffff',
     border: darkMode ? '#334155' : '#e4e4e7',
     navBg: darkMode ? '#1a1b1e' : '#ffffff',
@@ -177,7 +183,7 @@ const handleDelete = async (id) => {
 
   return (
     <div style={{ backgroundColor: theme.bodyBg, color: theme.textMain, transition: 'all 0.3s ease', minHeight: '100vh' }}>
-      
+
       <style>{`
         nav {
           background: ${theme.navBg};
@@ -442,14 +448,64 @@ const handleDelete = async (id) => {
             width: 100%;
           }
         }
+          .skeleton-card{
+  background: ${theme.cardBg};
+  border:1px solid ${theme.border};
+  border-radius:12px;
+  overflow:hidden;
+}
+
+.skeleton-image{
+  width:100%;
+  height:200px;
+  background:linear-gradient(
+      90deg,
+      #e5e7eb 25%,
+      #f3f4f6 50%,
+      #e5e7eb 75%
+  );
+  background-size:400% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+.skeleton-line{
+  height:15px;
+  margin:12px 20px;
+  border-radius:5px;
+  background:linear-gradient(
+      90deg,
+      #e5e7eb 25%,
+      #f3f4f6 50%,
+      #e5e7eb 75%
+  );
+  background-size:400% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+.skeleton-line.short{
+  width:50%;
+}
+
+.skeleton-line.medium{
+  width:80%;
+}
+
+@keyframes shimmer{
+  0%{
+      background-position:100% 0;
+  }
+  100%{
+      background-position:-100% 0;
+  }
+}
       `}</style>
 
       {/* Dynamic Toast Layer */}
       {alertConfig.visible && (
         <div className={`toast-container toast-${alertConfig.type}`}>
           <i className={
-            alertConfig.type === 'success' ? "fas fa-check-circle" : 
-            alertConfig.type === 'danger' ? "fas fa-exclamation-triangle" : "fas fa-info-circle"
+            alertConfig.type === 'success' ? "fas fa-check-circle" :
+              alertConfig.type === 'danger' ? "fas fa-exclamation-triangle" : "fas fa-info-circle"
           } style={{ fontSize: '1.2rem' }}></i>
           <span>{alertConfig.message}</span>
         </div>
@@ -463,35 +519,35 @@ const handleDelete = async (id) => {
               <i className="fas fa-lock" style={{ color: '#2563eb' }}></i> Security Gateway
             </h3>
             <p style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: theme.textMuted }}>Please enter your master password to unlock administration configuration metrics node.</p>
-            
+
             <form onSubmit={handleAdminAuthSubmit}>
               <div className="admin-form-group" style={{ marginBottom: '20px' }}>
                 <div className="admin-field-wrapper">
-                  <input 
-                    type="password" 
-                    placeholder="Enter Admin Password" 
-                    className="admin-input-element" 
-                    value={enteredPassword} 
-                    onChange={e => setEnteredPassword(e.target.value)} 
-                    required 
+                  <input
+                    type="password"
+                    placeholder="Enter Admin Password"
+                    className="admin-input-element"
+                    value={enteredPassword}
+                    onChange={e => setEnteredPassword(e.target.value)}
+                    required
                     autoFocus
                   />
                   <i className="fas fa-key"></i>
                 </div>
               </div>
-              
+
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  className="admin-cancel-btn" 
-                  style={{ padding: '10px 18px', fontSize: '0.9rem' }} 
+                <button
+                  type="button"
+                  className="admin-cancel-btn"
+                  style={{ padding: '10px 18px', fontSize: '0.9rem' }}
                   onClick={() => { setShowLoginModal(false); setEnteredPassword(''); }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  className="admin-submit-btn" 
+                <button
+                  type="submit"
+                  className="admin-submit-btn"
                   style={{ padding: '10px 22px', fontSize: '0.9rem', flex: 'none' }}
                 >
                   Verify Key
@@ -503,87 +559,87 @@ const handleDelete = async (id) => {
       )}
 
       {/* Navigation Bar */}
-    <nav>
-  <div className="logo">
-    <img 
-      src="https://i.ibb.co/G4GDhTSr/20260616-092702.png" 
-      alt="Suraj Patel" 
-      style={{ height: '40px', width: 'auto', display: 'block' }}  
-    />uraj<span>Patel</span>
-   
-    
-  </div>
-        
-  <div className="nav-controls-right">
-    <button 
-      className="theme-toggle-btn" 
-      onClick={() => setDarkMode(!darkMode)} 
-      title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-    >
-      <i className={darkMode ? "fas fa-sun" : "fas fa-moon"}></i>
-    </button>
-    <div className="menu-toggle" style={{color: theme.textMain}} onClick={() => setMenuOpen(!menuOpen)}>☰</div>
-  </div>
+      <nav>
+        <div className="logo">
+          <img
+            src="https://i.ibb.co/G4GDhTSr/20260616-092702.png"
+            alt="Suraj Patel"
+            style={{ height: '40px', width: 'auto', display: 'block' }}
+          />uraj<span>Patel</span>
 
-  <ul>
-    <li><a href="#home" onClick={() => setMenuOpen(false)}>Home</a></li>
-    <li><a href="#about" onClick={() => setMenuOpen(false)}>About</a></li>
-    <li><a href="#skills" onClick={() => setMenuOpen(false)}>Skills</a></li>
-    <li><a href="#projects" onClick={() => setMenuOpen(false)}>Projects</a></li>
-    <li><a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a></li>
-    
-    <li className="desktop-theme-wrapper">
-      <button 
-        className="theme-toggle-btn" 
-        onClick={() => setDarkMode(!darkMode)}
-        title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-      >
-        <i className={darkMode ? "fas fa-sun" : "fas fa-moon"}></i>
-      </button>
-    </li>
 
-    <li>
-      <button 
-        onClick={handleLoginClick} 
-        style={{
-          padding: '8px 18px', 
-          borderRadius: '6px', 
-          border: isAdmin ? '1px solid #ef4444' : '1px solid #2563eb', 
-          background: isAdmin ? '#ef4444' : 'transparent', 
-          color: isAdmin ? '#ffffff' : (darkMode ? '#ffffff' : '#2563eb'), 
-          cursor: 'pointer', 
-          fontWeight: '600',
-          fontSize: '0.9rem',
-          transition: 'all 0.2s'
-        }}
-      >
-        <i className={isAdmin ? "fas fa-sign-out-alt" : "fas fa-user-shield"} style={{ marginRight: '6px' }}></i>
-        {isAdmin ? "Logout" : "Admin Login"}
-      </button>
-    </li>
-  </ul>
-</nav>
+        </div>
+
+        <div className="nav-controls-right">
+          <button
+            className="theme-toggle-btn"
+            onClick={() => setDarkMode(!darkMode)}
+            title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            <i className={darkMode ? "fas fa-sun" : "fas fa-moon"}></i>
+          </button>
+          <div className="menu-toggle" style={{ color: theme.textMain }} onClick={() => setMenuOpen(!menuOpen)}>☰</div>
+        </div>
+
+        <ul>
+          <li><a href="#home" onClick={() => setMenuOpen(false)}>Home</a></li>
+          <li><a href="#about" onClick={() => setMenuOpen(false)}>About</a></li>
+          <li><a href="#skills" onClick={() => setMenuOpen(false)}>Skills</a></li>
+          <li><a href="#projects" onClick={() => setMenuOpen(false)}>Projects</a></li>
+          <li><a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a></li>
+
+          <li className="desktop-theme-wrapper">
+            <button
+              className="theme-toggle-btn"
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              <i className={darkMode ? "fas fa-sun" : "fas fa-moon"}></i>
+            </button>
+          </li>
+
+          <li>
+            <button
+              onClick={handleLoginClick}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '6px',
+                border: isAdmin ? '1px solid #ef4444' : '1px solid #2563eb',
+                background: isAdmin ? '#ef4444' : 'transparent',
+                color: isAdmin ? '#ffffff' : (darkMode ? '#ffffff' : '#2563eb'),
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              <i className={isAdmin ? "fas fa-sign-out-alt" : "fas fa-user-shield"} style={{ marginRight: '6px' }}></i>
+              {isAdmin ? "Logout" : "Admin Login"}
+            </button>
+          </li>
+        </ul>
+      </nav>
 
 
       {/* Admin Management Panel */}
       {isAdmin && (
         <div className="admin-premium-card">
-          <div style={{textAlign: 'center', marginBottom: '25px'}}>
-            <span style={{background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px'}}>
+          <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+            <span style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>
               Database Master Control
             </span>
-            <h2 style={{color: theme.textMain, fontSize: '1.75rem', fontWeight: '700', marginTop: '10px', marginBottom: '5px'}}>
+            <h2 style={{ color: theme.textMain, fontSize: '1.75rem', fontWeight: '700', marginTop: '10px', marginBottom: '5px' }}>
               {editId ? "✏️ Revise Project Stack" : "➕ Deploy New Project"}
             </h2>
-            <p style={{color: theme.textMuted, fontSize: '0.9rem', margin: '0'}}>Fill in the parameters below to update live portfolio cards node dynamically.</p>
+            <p style={{ color: theme.textMuted, fontSize: '0.9rem', margin: '0' }}>Fill in the parameters below to update live portfolio cards node dynamically.</p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{display:'flex', flexDirection:'column', gap:'20px'}}>
-            
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
             <div className="admin-form-group">
               <label><i className="fas fa-heading"></i> Project Title</label>
               <div className="admin-field-wrapper">
-                <input type="text" placeholder="e.g. Advanced AI Engine Dashboard" className="admin-input-element" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+                <input type="text" placeholder="e.g. Advanced AI Engine Dashboard" className="admin-input-element" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
                 <i className="fas fa-pen-nib"></i>
               </div>
             </div>
@@ -591,7 +647,7 @@ const handleDelete = async (id) => {
             <div className="admin-form-group">
               <label><i className="fas fa-align-left"></i> Project Description</label>
               <div className="admin-field-wrapper">
-                <textarea placeholder="Write a short summary..." rows="3" className="admin-input-element" value={form.description} onChange={e => setForm({...form, description: e.target.value})} required></textarea>
+                <textarea placeholder="Write a short summary..." rows="3" className="admin-input-element" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required></textarea>
                 <i className="fas fa-quote-right"></i>
               </div>
             </div>
@@ -599,21 +655,21 @@ const handleDelete = async (id) => {
             <div className="admin-form-group">
               <label><i className="fas fa-tags"></i> Stack Stream Category</label>
               <div className="admin-field-wrapper">
-                <select className="admin-input-element" style={{appearance: 'none', cursor: 'pointer'}} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+                <select className="admin-input-element" style={{ appearance: 'none', cursor: 'pointer' }} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
                   <option value="mern">MERN Stack Development</option>
                   <option value="gaming">Interactive Games Engine</option>
                   <option value="tools">Utilities & Core Tools</option>
                   <option value="frontend">Frontend Specialized UI</option>
                 </select>
                 <i className="fas fa-layer-group"></i>
-                <i className="fas fa-chevron-down" style={{left: 'auto', right: '16px'}}></i>
+                <i className="fas fa-chevron-down" style={{ left: 'auto', right: '16px' }}></i>
               </div>
             </div>
 
             <div className="admin-form-group">
               <label><i className="fas fa-image"></i> Cloud Image Visual Link</label>
               <div className="admin-field-wrapper">
-                <input type="text" placeholder="https://images.unsplash.com/photo-example-url" className="admin-input-element" value={form.image} onChange={e => setForm({...form, image: e.target.value})} required />
+                <input type="text" placeholder="https://images.unsplash.com/photo-example-url" className="admin-input-element" value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} required />
                 <i className="fas fa-link"></i>
               </div>
             </div>
@@ -621,7 +677,7 @@ const handleDelete = async (id) => {
             <div className="admin-form-group">
               <label><i className="fas fa-globe"></i> Live Production Deployment Link</label>
               <div className="admin-field-wrapper">
-                <input type="text" placeholder="https://your-live-deployment.vercel.app" className="admin-input-element" value={form.link} onChange={e => setForm({...form, link: e.target.value})} required />
+                <input type="text" placeholder="https://your-live-deployment.vercel.app" className="admin-input-element" value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} required />
                 <i className="fas fa-external-link-alt"></i>
               </div>
             </div>
@@ -696,83 +752,115 @@ const handleDelete = async (id) => {
       </section>
 
       {/* Projects Grid */}
-     <section id="projects" style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-  <h2 style={{ borderBottom: `2px solid #2563eb`, display: 'inline-block', paddingBottom: '5px', marginBottom: '30px', color: theme.textMain, textAlign: 'center' }}>My Projects</h2>
-  
-  <div className="filter-buttons" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '30px', justifyContent: 'center' }}>
-    {['all', 'mern', 'gaming', 'tools', 'frontend'].map(cat => (
-      <button 
-        key={cat} 
-        onClick={() => setFilter(cat)}
-        style={{
-          padding: '8px 16px',
-          borderRadius: '20px',
-          border: `1px solid ${filter === cat ? '#2563eb' : theme.border}`,
-          background: filter === cat ? '#2563eb' : theme.cardBg,
-          color: filter === cat ? '#ffffff' : theme.textMain,
-          cursor: 'pointer',
-          fontWeight: '500',
-          textTransform: 'uppercase',
-          fontSize: '0.8rem'
-        }}
-      >
-        {cat === 'all' ? 'All Projects' : `${cat}`}
-      </button>
-    ))}
-  </div>
+      <section id="projects" style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <h2 style={{ borderBottom: `2px solid #2563eb`, display: 'inline-block', paddingBottom: '5px', marginBottom: '30px', color: theme.textMain, textAlign: 'center' }}>My Projects</h2>
 
-  {projects.length === 0 ? (
-    <div style={{textAlign:'center', padding:'40px', color: theme.textMuted, background: theme.cardBg, borderRadius:'12px', border:`1px dashed ${theme.border}`, maxWidth:'500px', margin:'0 auto'}}>
-      <i className="fas fa-folder-open" style={{fontSize:'2rem', marginBottom:'10px', color: theme.border}}></i>
-      <p style={{fontSize:'0.95rem', fontWeight:'500'}}>No projects found in the database.</p>
-      <p style={{fontSize:'0.85rem'}}>Login as Admin to add your work.</p>
-    </div>
-  ) : (
-    <div className="projects-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '25px', width: '100%' }}>
-      {filteredProjects.map(project => (
-        <div key={project._id} className="project-card" style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: '12px', overflow: 'hidden' }}>
-          <img src={project.image} alt={project.title} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
-          <div className="card-content" style={{ padding: '20px' }}>
-            <h3 style={{ margin: '0 0 10px 0', color: theme.textMain }}>{project.title}</h3>
-            <p style={{ color: theme.textMuted, fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '15px' }}>{project.description}</p>
-            <a href={project.link} className="view" target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              Execute Engine <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
-            </a>
-            {isAdmin && (
-              <div className="crud-btns" style={{marginTop:'15px', display:'flex', gap:'10px'}}>
-                <button className="btn-edit" style={{padding:'6px 12px', cursor:'pointer', background: 'transparent', border: `1px solid ${theme.border}`, color: theme.textMain, borderRadius: '4px'}} onClick={() => handleEditSelect(project)}>✏️ Edit</button>
-                <button className="btn-delete" style={{padding:'6px 12px', cursor:'pointer', background:'#ef4444', color:'white', border:'none', borderRadius: '4px'}} onClick={() => handleDelete(project._id)}>🗑️ Delete</button>
-              </div>
-            )}
-          </div>
+        <div className="filter-buttons" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '30px', justifyContent: 'center' }}>
+          {['all', 'mern', 'gaming', 'tools', 'frontend'].map(cat => (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: `1px solid ${filter === cat ? '#2563eb' : theme.border}`,
+                background: filter === cat ? '#2563eb' : theme.cardBg,
+                color: filter === cat ? '#ffffff' : theme.textMain,
+                cursor: 'pointer',
+                fontWeight: '500',
+                textTransform: 'uppercase',
+                fontSize: '0.8rem'
+              }}
+            >
+              {cat === 'all' ? 'All Projects' : `${cat}`}
+            </button>
+          ))}
         </div>
-      ))}
-    </div>
-  )}
-</section>
+
+        {loading ? (
+
+          <div
+            className="projects-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))',
+              gap: '25px',
+              width: '100%'
+            }}
+          >
+
+            {[1, 2, 3, 4, 5, 6].map((item) => (
+              <div key={item} className="skeleton-card">
+
+                <div className="skeleton-image"></div>
+
+                <div style={{ padding: "15px" }}>
+
+                  <div className="skeleton-line medium"></div>
+
+                  <div className="skeleton-line"></div>
+
+                  <div className="skeleton-line short"></div>
+
+                </div>
+
+              </div>
+            ))}
+
+          </div>
+
+        ) : projects.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: theme.textMuted, background: theme.cardBg, borderRadius: '12px', border: `1px dashed ${theme.border}`, maxWidth: '500px', margin: '0 auto' }}>
+            <i className="fas fa-folder-open" style={{ fontSize: '2rem', marginBottom: '10px', color: theme.border }}></i>
+            <p style={{ fontSize: '0.95rem', fontWeight: '500' }}>No projects found in the database.</p>
+            <p style={{ fontSize: '0.85rem' }}>Login as Admin to add your work.</p>
+          </div>
+        ) : (
+          <div className="projects-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '25px', width: '100%' }}>
+            {filteredProjects.map(project => (
+              <div key={project._id} className="project-card" style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: '12px', overflow: 'hidden' }}>
+                <img src={project.image} alt={project.title} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
+                <div className="card-content" style={{ padding: '20px' }}>
+                  <h3 style={{ margin: '0 0 10px 0', color: theme.textMain }}>{project.title}</h3>
+                  <p style={{ color: theme.textMuted, fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '15px' }}>{project.description}</p>
+                  <a href={project.link} className="view" target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    Execute Engine <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
+                  </a>
+                  {isAdmin && (
+                    <div className="crud-btns" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                      <button className="btn-edit" style={{ padding: '6px 12px', cursor: 'pointer', background: 'transparent', border: `1px solid ${theme.border}`, color: theme.textMain, borderRadius: '4px' }} onClick={() => handleEditSelect(project)}>✏️ Edit</button>
+                      <button className="btn-delete" style={{ padding: '6px 12px', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px' }} onClick={() => handleDelete(project._id)}>🗑️ Delete</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Contact Form */}
       <section id="contact" style={{ background: theme.cardBg, borderTop: `1px solid ${theme.border}`, padding: '60px 20px' }}>
         <h2 style={{ marginBottom: '10px', textAlign: 'center', color: theme.textMain }}>Contact Me</h2>
         <p style={{ color: theme.textMuted, marginBottom: '30px', textAlign: 'center' }}>Feel free to drop a message.</p>
-        
-        <form onSubmit={handleContactSubmit} style={{maxWidth: '500px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '15px'}}>
-          <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-            <label style={{fontSize: '0.9rem', fontWeight: '600', color: theme.textMain ,textAlign: 'start'}}><i className="fas fa-user" style={{ marginRight: '6px', color: '#2563eb' }}></i>Your Name</label>
-            <input type="text" placeholder="John Doe" value={contactData.name} onChange={e => setContactData({...contactData, name: e.target.value})} style={{padding: '12px', background: theme.inputBg, color: theme.textMain, border: `1px solid ${theme.border}`, borderRadius: '6px'}} required />
+
+        <form onSubmit={handleContactSubmit} style={{ maxWidth: '500px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '0.9rem', fontWeight: '600', color: theme.textMain, textAlign: 'start' }}><i className="fas fa-user" style={{ marginRight: '6px', color: '#2563eb' }}></i>Your Name</label>
+            <input type="text" placeholder="John Doe" value={contactData.name} onChange={e => setContactData({ ...contactData, name: e.target.value })} style={{ padding: '12px', background: theme.inputBg, color: theme.textMain, border: `1px solid ${theme.border}`, borderRadius: '6px' }} required />
           </div>
-          
-          <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-            <label style={{fontSize: '0.9rem', fontWeight: '600', color: theme.textMain,textAlign: 'start'}}><i className="fas fa-envelope" style={{ marginRight: '6px', color: '#2563eb' }}></i>Your Email</label>
-            <input type="email" placeholder="john@example.com" value={contactData.email} onChange={e => setContactData({...contactData, email: e.target.value})} style={{padding: '12px', background: theme.inputBg, color: theme.textMain, border: `1px solid ${theme.border}`, borderRadius: '6px'}} required />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '0.9rem', fontWeight: '600', color: theme.textMain, textAlign: 'start' }}><i className="fas fa-envelope" style={{ marginRight: '6px', color: '#2563eb' }}></i>Your Email</label>
+            <input type="email" placeholder="john@example.com" value={contactData.email} onChange={e => setContactData({ ...contactData, email: e.target.value })} style={{ padding: '12px', background: theme.inputBg, color: theme.textMain, border: `1px solid ${theme.border}`, borderRadius: '6px' }} required />
           </div>
-          
-          <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-            <label style={{fontSize: '0.9rem', fontWeight: '600', color: theme.textMain,textAlign: 'start'}}><i className="fas fa-comment-alt" style={{ marginRight: '6px', color: '#2563eb' }}></i>Message</label>
-            <textarea placeholder="Hi Suraj, let's talk..." rows="5" value={contactData.message} onChange={e => setContactData({...contactData, message: e.target.value})} style={{padding: '12px', background: theme.inputBg, color: theme.textMain, border: `1px solid ${theme.border}`, borderRadius: '6px', resize: 'vertical'}} required></textarea>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '0.9rem', fontWeight: '600', color: theme.textMain, textAlign: 'start' }}><i className="fas fa-comment-alt" style={{ marginRight: '6px', color: '#2563eb' }}></i>Message</label>
+            <textarea placeholder="Hi Suraj, let's talk..." rows="5" value={contactData.message} onChange={e => setContactData({ ...contactData, message: e.target.value })} style={{ padding: '12px', background: theme.inputBg, color: theme.textMain, border: `1px solid ${theme.border}`, borderRadius: '6px', resize: 'vertical' }} required></textarea>
           </div>
-          
-          <button type="submit" style={{padding: '14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', justifycontent: 'center', gap: '10px', fontSize: '0.95rem'}}>
+
+          <button type="submit" style={{ padding: '14px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', justifycontent: 'center', gap: '10px', fontSize: '0.95rem' }}>
             Send Message <i className="fas fa-paper-plane"></i>
           </button>
         </form>
