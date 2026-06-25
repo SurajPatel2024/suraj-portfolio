@@ -12,8 +12,23 @@ app.use(cors({ origin: "*" })); // Sabhi origins allow kiye
 app.use(express.json());
 
 // Schema
-const Project = mongoose.model('Project', new mongoose.Schema({
-    title: String, description: String, category: String, image: String, link: String
+const Project = mongoose.model("Project", new mongoose.Schema({
+    title: String,
+    description: String,
+    category: String,
+    image: String,
+    link: String,
+
+    likes: {
+        type: Number,
+        default: 0
+    },
+
+    likedUsers: {
+        type: [String],
+        default: []
+    }
+
 }, { timestamps: true }));
 
 // Admin Auth
@@ -49,12 +64,41 @@ app.delete('/api/projects/:id', authAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+app.post("/api/projects/:id/like", async (req, res) => {
+  try {
+    const { userId } = req.body;
+ 
+    const project = await Project.findById(req.params.id);
 
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    if (project.likedUsers.includes(userId)) {
+      project.likedUsers = project.likedUsers.filter(id => id !== userId);
+      project.likes--;
+    } else {
+      project.likedUsers.push(userId);
+      project.likes++;
+    } 
+
+    await project.save();
+
+    res.json(project);
+
+  } catch (err) {
+    console.error(err); // <-- Important
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
 const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
-});
+}); 
  
 mongoose
   .connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 })

@@ -4,7 +4,21 @@ import React, { useState, useEffect } from 'react';
 
 const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
 const API_URL = import.meta.env.VITE_API_URL;
+const getUserId = () => {
 
+    let id = localStorage.getItem("userId");
+
+    if (!id) {
+
+        id = crypto.randomUUID();
+
+        localStorage.setItem("userId", id);
+
+    }
+
+    return id;
+
+};
 function App() {
   // .env se variables load karein
 
@@ -135,7 +149,26 @@ function App() {
     }
   };
 
+const handleLike = async (id) => {
 
+    try {
+
+        await axios.post(
+            `${API_URL}/api/projects/${id}/like`,
+            {
+                userId: getUserId()
+            }
+        );
+
+        fetchProjects();
+
+    } catch (err) {
+
+        console.log(err);
+
+    }
+
+};
   const handleEditSelect = (proj) => {
     setEditId(proj._id);
     setForm({ title: proj.title, description: proj.description, category: proj.category, image: proj.image, link: proj.link });
@@ -184,7 +217,8 @@ function App() {
   return (
     <div style={{ backgroundColor: theme.bodyBg, color: theme.textMain, transition: 'all 0.3s ease', minHeight: '100vh' }}>
 
-      <style>{`
+      <style>
+        {`
         nav {
           background: ${theme.navBg};
           border-bottom: 1px solid ${theme.navBorder};
@@ -498,7 +532,83 @@ function App() {
       background-position:-100% 0;
   }
 }
-      `}</style>
+    .project-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:18px;
+}
+
+.like-btn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    padding:8px 14px;
+
+    border:none;
+
+    border-radius:30px;
+
+    background:#f5f5f5;
+
+    color:#444;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.like-btn i{
+    color:#888;
+    transition:.3s;
+}
+
+.like-btn:hover{
+    transform:translateY(-2px);
+    background:#ffe8ec;
+}
+
+.like-btn:hover i{
+    color:#ff3366;
+}
+
+.like-btn.liked{
+    background:#ff3366;
+    color:white;
+}
+
+.like-btn.liked i{
+    color:white;
+    animation:pop .35s;
+}
+
+.visit-btn{
+    text-decoration:none;
+    color:white;
+    background:#2563eb;
+    padding:8px 14px;
+    border-radius:8px;
+    transition:.3s;
+}
+
+.visit-btn:hover{
+    background:#1d4ed8;
+}
+
+@keyframes pop{
+
+0%{transform:scale(1)}
+
+40%{transform:scale(1.35)}
+
+100%{transform:scale(1)}
+
+}
+    `}
+    </style>
 
       {/* Dynamic Toast Layer */}
       {alertConfig.visible && (
@@ -823,9 +933,27 @@ function App() {
                 <div className="card-content" style={{ padding: '20px' }}>
                   <h3 style={{ margin: '0 0 10px 0', color: theme.textMain }}>{project.title}</h3>
                   <p style={{ color: theme.textMuted, fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '15px' }}>{project.description}</p>
-                  <a href={project.link} className="view" target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: '600', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  Visit Project <i className="fas fa-external-link-alt" style={{ fontSize: '0.8rem' }}></i>
-                  </a>
+                  <div className="project-actions">
+
+    <button
+        onClick={() => handleLike(project._id)}
+        className={`like-btn ${project.likedUsers?.includes(getUserId()) ? "liked" : ""}`}
+    >
+        <i className="fa-solid fa-heart"></i>
+        <span>{project.likes}</span>
+    </button>
+
+    <a
+        href={project.link}
+        target="_blank"
+        rel="noreferrer"
+        className="visit-btn"
+    >
+        Visit →
+    </a>
+
+</div>
+  
                   {isAdmin && (
                     <div className="crud-btns" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
                       <button className="btn-edit" style={{ padding: '6px 12px', cursor: 'pointer', background: 'transparent', border: `1px solid ${theme.border}`, color: theme.textMain, borderRadius: '4px' }} onClick={() => handleEditSelect(project)}>✏️ Edit</button>
