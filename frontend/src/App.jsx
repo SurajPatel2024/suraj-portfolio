@@ -57,6 +57,51 @@ function App() {
   const [chatTyping, setChatTyping] = useState(false);
   const [visitorName, setVisitorName] = useState('');
   const [awaitingVisitorName, setAwaitingVisitorName] = useState(false);
+  const [chatVoiceEnabled, setChatVoiceEnabled] = useState(true);
+  const [chatSpeaking, setChatSpeaking] = useState(false);
+
+  // Speak every chatbot reply in English with the most natural English voice available.
+  const speakChatReply = (text) => {
+    if (!chatVoiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    // Keep spoken output English-only. URLs and Hindi-script fragments are not read aloud.
+    const cleanText = String(text || '')
+      .replace(/https?:\/\/\S+/g, ' ')
+      .replace(/[\u0900-\u097F]+/g, ' ')
+      .replace(/[•*_#`]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleanText) return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.92;
+    utterance.pitch = 1.02;
+    utterance.volume = 1;
+    utterance.onstart = () => setChatSpeaking(true);
+    utterance.onend = () => setChatSpeaking(false);
+    utterance.onerror = () => setChatSpeaking(false);
+
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoices = voices.filter(voice => /^en([-_]|$)/i.test(voice.lang));
+    // Prefer polished, natural-sounding system voices when installed; otherwise use any English voice.
+    const preferredVoice = englishVoices.find(voice => /aria|jenny|sonia|samantha|ava|zira|google us english|natural|neural/i.test(voice.name))
+      || englishVoices.find(voice => /en[-_]US/i.test(voice.lang))
+      || englishVoices.find(voice => /en[-_]GB/i.test(voice.lang))
+      || englishVoices[0];
+    if (preferredVoice) utterance.voice = preferredVoice;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopChatSpeech = () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setChatSpeaking(false);
+  };
+
+  useEffect(() => () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }, []);
 
   // Trigger Custom Smooth Toast
   const triggerAlert = (message, type = 'info') => {
@@ -209,8 +254,9 @@ const handleLike = async (id) => {
   const getChatbotReply = (rawMessage) => {
     const message = rawMessage.toLowerCase().trim();
     const isHindi = /[\u0900-\u097F]/.test(rawMessage) || /\b(kya|kaise|kaun|mera|meri|hai|hain|batao|dikhao|chahiye|kripya|dhanyavaad|shukriya|namaste|aap|tum)\b/.test(message);
-    const name = visitorName || (isHindi ? 'दोस्त' : 'there');
-    const say = (english, hindi) => isHindi ? hindi : english;
+    const name = visitorName || 'there';
+    // Written chatbot replies are also kept in English for consistent English voice output.
+    const say = (english, hindi) => english;
 
     // Match a project by its actual title and return details from the database.
     const matchedProject = projects.find(project =>
@@ -284,10 +330,11 @@ const handleLike = async (id) => {
       setChatTyping(true);
       window.setTimeout(() => {
         const greeting = name
-          ? `Nice to meet you, ${name}! 😊 / आपसे मिलकर अच्छा लगा, ${name}! अब आप मुझसे Suraj के बारे में कुछ भी पूछ सकते हैं।`
-          : 'Welcome! 😊 अब आप मुझसे Suraj के portfolio के बारे में पूछ सकते हैं।';
+          ? `Nice to meet you, ${name}! You can now ask me anything about Suraj and this portfolio.`
+          : 'Welcome! You can now ask me anything about Suraj and this portfolio.';
         setChatMessages(prev => [...prev, { from: 'bot', text: greeting }]);
         setChatTyping(false);
+        speakChatReply(greeting);
       }, 550);
       return;
     }
@@ -297,6 +344,7 @@ const handleLike = async (id) => {
       const reply = getChatbotReply(cleanMessage);
       setChatMessages(prev => [...prev, { from: 'bot', text: reply }]);
       setChatTyping(false);
+      speakChatReply(reply);
     }, 650);
   };
 
@@ -304,7 +352,9 @@ const handleLike = async (id) => {
     setChatOpen(true);
     if (chatMessages.length === 0) {
       setAwaitingVisitorName(true);
-      setChatMessages([{ from: 'bot', text: 'Hi! 👋 Welcome to Suraj Patel’s portfolio. What is your name? / नमस्ते! 👋 Suraj Patel के portfolio में आपका स्वागत है। आपका नाम क्या है? (You can type Skip to continue without a name.)' }]);
+      const welcome = 'Hello! Welcome to Suraj Patel’s portfolio. What is your name? You can type Skip to continue without a name.';
+      setChatMessages([{ from: 'bot', text: welcome }]);
+      speakChatReply(welcome);
     }
   };
 
@@ -1251,7 +1301,11 @@ const handleLike = async (id) => {
                 <strong>Portfolio Assistant</strong>
                 <span><i className="chat-online-dot"></i> Usually replies instantly</span>
               </div>
-              <button type="button" className="portfolio-chat-close" onClick={() => setChatOpen(false)} aria-label="Close chat">×</button>
+              <div className="portfolio-chat-voice-controls">
+                <button type="button" onClick={() => { if (chatVoiceEnabled) stopChatSpeech(); setChatVoiceEnabled(value => !value); }} aria-label={chatVoiceEnabled ? 'Mute chatbot voice' : 'Enable chatbot voice'} title={chatVoiceEnabled ? 'Mute voice' : 'Enable voice'}><i className={chatVoiceEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute'}></i></button>
+                <button type="button" onClick={stopChatSpeech} aria-label="Stop speaking" title="Stop speaking" disabled={!chatSpeaking}><i className="fas fa-stop"></i></button>
+                <button type="button" className="portfolio-chat-close" onClick={() => { stopChatSpeech(); setChatOpen(false); }} aria-label="Close chat">×</button>
+              </div>
             </div>
 
             <div className="portfolio-chat-messages" aria-live="polite">
@@ -1289,6 +1343,12 @@ const handleLike = async (id) => {
 
       <style>{`
         .portfolio-chat-widget{position:fixed;right:26px;bottom:24px;z-index:3000;font-family:inherit}
+        .portfolio-chat-voice-controls{display:flex;align-items:center;gap:6px;margin-left:auto}
+        .portfolio-chat-voice-controls button{width:34px;height:34px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.08);color:#e2e8f0;cursor:pointer}
+        .portfolio-chat-voice-controls button:hover:not(:disabled){background:rgba(59,130,246,.3)}
+        .portfolio-chat-voice-controls button:disabled{opacity:.35;cursor:not-allowed}
+        .portfolio-chat-header{display:flex;align-items:center;gap:10px}
+        .portfolio-chat-heading{min-width:0}
         .portfolio-chat-launcher{position:relative;width:62px;height:62px;border:0;border-radius:20px;background:linear-gradient(135deg,#2563eb,#06b6d4);color:#fff;font-size:25px;cursor:pointer;box-shadow:0 12px 34px rgba(37,99,235,.38);transition:transform .25s,box-shadow .25s}
         .portfolio-chat-launcher:hover{transform:translateY(-4px) scale(1.04);box-shadow:0 16px 38px rgba(37,99,235,.48)}
         .chat-launcher-ping{position:absolute;right:3px;top:3px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 0 0 5px rgba(34,197,94,.16)}
@@ -1317,7 +1377,9 @@ const handleLike = async (id) => {
         .portfolio-chat-footnote;padding:0 10px 10px;text-align:center;background:#131f31;color:#64748b;font-size:9px}
         .chat-typing{display:flex;gap:4px;align-items:center;min-width:48px}.chat-typing i{width:5px;height:5px;border-radius:50%;background:#94a3b8;animation:chatTyping .8s infinite alternate}.chat-typing i:nth-child(2){animation-delay:.15s}.chat-typing i:nth-child(3){animation-delay:.3s}
         @keyframes chatTyping{to{opacity:.25;transform:translateY(-3px)}}
-        @media(max-width:600px){.portfolio-chat-widget{right:15px;bottom:16px}.portfolio-chat-launcher{width:56px;height:56px;border-radius:18px}.portfolio-chat-panel{right:0;bottom:68px;height:min(520px,calc(100dvh - 105px));min-height:350px}}
+        @media(max-width:600px){
+          .portfolio-chat-voice-controls{gap:4px}
+          .portfolio-chat-voice-controls button{width:32px;height:32px}.portfolio-chat-widget{right:15px;bottom:16px}.portfolio-chat-launcher{width:56px;height:56px;border-radius:18px}.portfolio-chat-panel{right:0;bottom:68px;height:min(520px,calc(100dvh - 105px));min-height:350px}}
         /* Mobile-first responsive refinements */
         .portfolio-chat-widget{right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));}
         .portfolio-chat-panel{width:min(390px,calc(100vw - 32px));max-height:calc(100dvh - 112px);min-height:0;}
@@ -1327,6 +1389,8 @@ const handleLike = async (id) => {
         .portfolio-chat-quick-replies button{min-height:36px;touch-action:manipulation;}
         .portfolio-chat-launcher{touch-action:manipulation;}
         @media(max-width:600px){
+          .portfolio-chat-voice-controls{gap:4px}
+          .portfolio-chat-voice-controls button{width:32px;height:32px}
           .portfolio-chat-widget{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));}
           .portfolio-chat-launcher{width:54px;height:54px;border-radius:17px;font-size:22px;}
           .portfolio-chat-panel{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(76px + env(safe-area-inset-bottom));width:min(420px,calc(100vw - 24px));height:min(620px,calc(100dvh - 100px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));max-height:calc(100dvh - 100px);min-height:0;border-radius:18px;}
