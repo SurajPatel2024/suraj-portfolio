@@ -57,13 +57,13 @@ function App() {
   const [chatTyping, setChatTyping] = useState(false);
   const [visitorName, setVisitorName] = useState('');
   const [awaitingVisitorName, setAwaitingVisitorName] = useState(false);
-  const [chatVoiceEnabled, setChatVoiceEnabled] = useState(true);
+  const [chatVoiceEnabled, setChatVoiceEnabled] = useState(false);
   const [chatSpeaking, setChatSpeaking] = useState(false);
 
   // Speak every chatbot reply in English with the most natural English voice available.
   const speakChatReply = (text) => {
     if (!chatVoiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
+if (!chatVoiceEnabled) return;
     // Keep spoken output English-only. URLs and Hindi-script fragments are not read aloud.
     const cleanText = String(text || '')
       .replace(/https?:\/\/\S+/g, ' ')
