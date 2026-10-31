@@ -1,6 +1,6 @@
 import axios from 'axios';
-import React, { useState, useEffect } from 'react';
-
+ 
+import React, { useState, useEffect, useRef } from 'react';
 
 const MASTER_PWD = import.meta.env.VITE_ADMIN_PASSWORD;
 const API_URL = import.meta.env.VITE_API_URL;
@@ -63,7 +63,7 @@ function App() {
   // Speak every chatbot reply in English with the most natural English voice available.
   const speakChatReply = (text) => {
     if (!chatVoiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-if (!chatVoiceEnabled) return;
+
     // Keep spoken output English-only. URLs and Hindi-script fragments are not read aloud.
     const cleanText = String(text || '')
       .replace(/https?:\/\/\S+/g, ' ')
@@ -1335,22 +1335,27 @@ const handleLike = async (id) => {
             <div className="portfolio-chat-footnote">Automated portfolio assistant · Scripted replies</div>
           </section>
         )}
-        <button type="button" className="portfolio-chat-launcher" onClick={chatOpen ? () => { stopChatSpeech(); setChatOpen(false); } : openChatbot} aria-label={chatOpen ? 'Close chat assistant' : 'Open chat assistant'}>
+        <button type="button" className="portfolio-chat-launcher" onClick={chatOpen ? () => setChatOpen(false) : openChatbot} aria-label={chatOpen ? 'Close chat assistant' : 'Open chat assistant'}>
           <i className={chatOpen ? 'fas fa-times' : 'fas fa-comment-dots'}></i>
           {!chatOpen && <span className="chat-launcher-ping"></span>}
         </button>
       </div>
 
       <style>{`
-/* Responsive floating portfolio chatbot */
+       
+/* =====================================
+   PORTFOLIO CHAT WIDGET - FINAL FIX
+===================================== */
+
 .portfolio-chat-widget {
   position: fixed;
-  right: max(20px, env(safe-area-inset-right));
-  bottom: max(20px, env(safe-area-inset-bottom));
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
   z-index: 3000;
   font-family: inherit;
- 
 }
+
+/* Launcher */
 
 .portfolio-chat-launcher {
   position: relative;
@@ -1358,20 +1363,21 @@ const handleLike = async (id) => {
   place-items: center;
   width: 62px;
   height: 62px;
-  border: 0;
+  border: none;
   border-radius: 20px;
   background: linear-gradient(135deg, #2563eb, #06b6d4);
   color: #fff;
   font-size: 25px;
   cursor: pointer;
   box-shadow: 0 12px 34px rgba(37, 99, 235, .38);
-  transition: transform .25s ease, box-shadow .25s ease;
+  transition: .25s ease;
   touch-action: manipulation;
 }
+
 .portfolio-chat-launcher:hover {
   transform: translateY(-4px) scale(1.04);
-  box-shadow: 0 16px 38px rgba(37, 99, 235, .48);
 }
+
 .chat-launcher-ping {
   position: absolute;
   top: 3px;
@@ -1381,44 +1387,68 @@ const handleLike = async (id) => {
   border: 2px solid #fff;
   border-radius: 50%;
   background: #22c55e;
-  box-shadow: 0 0 0 5px rgba(34, 197, 94, .16);
 }
+
+/* Chat Panel - Desktop */
 
 .portfolio-chat-panel {
   position: absolute;
   right: 0;
-  bottom: 78px;
+  bottom: 82px;
+
+  width: 410px;
+  height: min(640px, calc(100vh - 130px));
+
+  min-height: 350px;
+  max-height: calc(100vh - 110px);
+
   display: flex;
   flex-direction: column;
-  width: min(390px, calc(100vw - 36px));
-  height: min(590px, calc(100vh - 125px));
-  min-height: 320px;
+
   overflow: hidden;
+
   color: #f8fafc;
   background: #101827;
+
   border: 1px solid rgba(148, 163, 184, .25);
   border-radius: 20px;
+
   box-shadow: 0 24px 75px rgba(2, 6, 23, .38);
+
   animation: chatPanelIn .25s ease-out;
 }
+
 @supports (height: 100dvh) {
-  .portfolio-chat-panel { height: min(590px, calc(100dvh - 125px)); }
+  .portfolio-chat-panel {
+    height: min(640px, calc(100dvh - 130px));
+    max-height: calc(100dvh - 110px);
+  }
 }
+
 @keyframes chatPanelIn {
-  from { opacity: 0; transform: translateY(12px) scale(.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
+
+/* Header */
 
 .portfolio-chat-header {
   display: flex;
   align-items: center;
-  gap: 11px;
   flex: 0 0 auto;
+  gap: 11px;
   min-width: 0;
   padding: 15px;
   background: linear-gradient(120deg, #172554, #0e7490);
   border-bottom: 1px solid rgba(255, 255, 255, .1);
 }
+
 .portfolio-chat-avatar,
 .chat-mini-avatar {
   display: grid;
@@ -1428,7 +1458,13 @@ const handleLike = async (id) => {
   background: rgba(255, 255, 255, .16);
   border-radius: 13px;
 }
-.portfolio-chat-avatar { width: 42px; height: 42px; font-size: 19px; }
+
+.portfolio-chat-avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 19px;
+}
+
 .portfolio-chat-heading {
   display: flex;
   flex: 1 1 auto;
@@ -1436,8 +1472,17 @@ const handleLike = async (id) => {
   gap: 4px;
   min-width: 0;
 }
-.portfolio-chat-heading strong { font-size: 14px; line-height: 1.3; }
-.portfolio-chat-heading span { color: #cbd5e1; font-size: 11px; line-height: 1.3; }
+
+.portfolio-chat-heading strong {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.portfolio-chat-heading span {
+  color: #cbd5e1;
+  font-size: 11px;
+}
+
 .chat-online-dot {
   display: inline-block;
   width: 7px;
@@ -1446,6 +1491,9 @@ const handleLike = async (id) => {
   background: #4ade80;
   border-radius: 50%;
 }
+
+/* Header Controls */
+
 .portfolio-chat-voice-controls {
   display: flex;
   flex: 0 0 auto;
@@ -1453,6 +1501,7 @@ const handleLike = async (id) => {
   gap: 5px;
   margin-left: auto;
 }
+
 .portfolio-chat-voice-controls button,
 .portfolio-chat-close {
   display: grid;
@@ -1467,21 +1516,37 @@ const handleLike = async (id) => {
   border-radius: 10px;
   cursor: pointer;
 }
+
+.portfolio-chat-close {
+  color: #fff;
+  font-size: 22px;
+}
+
 .portfolio-chat-voice-controls button:hover:not(:disabled),
-.portfolio-chat-close:hover { background: rgba(59, 130, 246, .3); }
-.portfolio-chat-voice-controls button:disabled { opacity: .35; cursor: not-allowed; }
-.portfolio-chat-close { color: #fff; font-size: 22px; border: 0; background: rgba(255, 255, 255, .12); }
+.portfolio-chat-close:hover {
+  background: rgba(59, 130, 246, .3);
+}
+
+.portfolio-chat-voice-controls button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+/* Messages */
 
 .portfolio-chat-messages {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   padding: 16px 13px 10px;
-  background: radial-gradient(circle at top right, rgba(37, 99, 235, .12), transparent 45%), #101827;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, .12), transparent 45%),
+    #101827;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
 .chat-date-label {
   margin: 0 0 16px;
   color: #64748b;
@@ -1490,21 +1555,40 @@ const handleLike = async (id) => {
   letter-spacing: 1.4px;
   text-align: center;
 }
+
 .chat-message-row {
   display: flex;
   align-items: flex-end;
   gap: 7px;
-  margin: 0 0 13px;
+  margin-bottom: 13px;
   animation: chatMessageIn .2s ease-out;
 }
-.chat-user-row { justify-content: flex-end; }
-@keyframes chatMessageIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+
+.chat-user-row {
+  justify-content: flex-end;
 }
-.chat-mini-avatar { width: 25px; height: 25px; font-size: 11px; background: #1d4ed8; border-radius: 8px; }
+
+@keyframes chatMessageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-mini-avatar {
+  width: 25px;
+  height: 25px;
+  font-size: 11px;
+  background: #1d4ed8;
+  border-radius: 8px;
+}
+
 .chat-bubble {
-  max-width: min(84%, 290px);
+  max-width: 82%;
   padding: 10px 12px;
   overflow-wrap: anywhere;
   white-space: pre-line;
@@ -1512,18 +1596,21 @@ const handleLike = async (id) => {
   line-height: 1.55;
   border-radius: 14px;
 }
+
 .chat-bot-bubble {
   color: #e2e8f0;
   background: #1e293b;
   border: 1px solid rgba(148, 163, 184, .12);
   border-bottom-left-radius: 4px;
 }
+
 .chat-user-bubble {
   color: #fff;
   background: linear-gradient(135deg, #2563eb, #0891b2);
   border-bottom-right-radius: 4px;
 }
-.chat-bubble a { overflow-wrap: anywhere; }
+
+/* Quick Replies */
 
 .portfolio-chat-quick-replies {
   display: flex;
@@ -1533,6 +1620,7 @@ const handleLike = async (id) => {
   padding: 0 13px 12px;
   background: #101827;
 }
+
 .portfolio-chat-quick-replies button {
   min-height: 36px;
   padding: 7px 10px;
@@ -1542,9 +1630,10 @@ const handleLike = async (id) => {
   border-radius: 20px;
   font-size: 11px;
   cursor: pointer;
-  touch-action: manipulation;
 }
-.portfolio-chat-quick-replies button:hover { background: rgba(14, 116, 144, .3); }
+
+/* Input */
+
 .portfolio-chat-input-area {
   display: flex;
   flex: 0 0 auto;
@@ -1553,6 +1642,7 @@ const handleLike = async (id) => {
   background: #131f31;
   border-top: 1px solid rgba(148, 163, 184, .16);
 }
+
 .portfolio-chat-input-area input {
   flex: 1 1 auto;
   min-width: 0;
@@ -1565,7 +1655,11 @@ const handleLike = async (id) => {
   outline: none;
   font-size: 16px;
 }
-.portfolio-chat-input-area input:focus { border-color: #38bdf8; }
+
+.portfolio-chat-input-area input:focus {
+  border-color: #38bdf8;
+}
+
 .portfolio-chat-input-area button {
   display: grid;
   flex: 0 0 46px;
@@ -1573,11 +1667,18 @@ const handleLike = async (id) => {
   min-height: 44px;
   color: #fff;
   background: #2563eb;
-  border: 0;
+  border: none;
   border-radius: 12px;
   cursor: pointer;
 }
-.portfolio-chat-input-area button:disabled { opacity: .45; cursor: not-allowed; }
+
+.portfolio-chat-input-area button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* Footer */
+
 .portfolio-chat-footnote {
   flex: 0 0 auto;
   padding: 0 10px 10px;
@@ -1586,7 +1687,16 @@ const handleLike = async (id) => {
   font-size: 9px;
   text-align: center;
 }
-.chat-typing { display: flex; align-items: center; gap: 4px; min-width: 48px; }
+
+/* Typing Animation */
+
+.chat-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 48px;
+}
+
 .chat-typing i {
   width: 5px;
   height: 5px;
@@ -1594,88 +1704,122 @@ const handleLike = async (id) => {
   border-radius: 50%;
   animation: chatTyping .8s infinite alternate;
 }
-.chat-typing i:nth-child(2) { animation-delay: .15s; }
-.chat-typing i:nth-child(3) { animation-delay: .3s; }
-@keyframes chatTyping { to { opacity: .25; transform: translateY(-3px); } }
+
+.chat-typing i:nth-child(2) {
+  animation-delay: .15s;
+}
+
+.chat-typing i:nth-child(3) {
+  animation-delay: .3s;
+}
+
+@keyframes chatTyping {
+  to {
+    opacity: .25;
+    transform: translateY(-3px);
+  }
+}
+
+/* Mobile */
 
 @media (max-width: 600px) {
   .portfolio-chat-widget {
-    right: 40px ;
-     top: 85%;
-    position:fixed;
-     
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
   }
-  .portfolio-chat-launcher { width: 56px; height: 56px; border-radius: 18px; font-size: 23px; }
+
+  .portfolio-chat-launcher {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    font-size: 23px;
+  }
+
   .portfolio-chat-panel {
     position: fixed;
-    right: max(10px, env(safe-area-inset-right));
+    right: max(12px, env(safe-area-inset-right));
     bottom: calc(76px + env(safe-area-inset-bottom));
-    width: min(440px, calc(100vw - 20px));
-    height: min(650px, calc(100vh - 105px));
-    max-height: calc(100vh - 105px);
-    min-height: 260px;
+
+    width: min(420px, calc(100vw - 24px));
+
+    height: min(
+      620px,
+      calc(100dvh - 100px - env(safe-area-inset-top) - env(safe-area-inset-bottom))
+    );
+
+    max-height: calc(100dvh - 100px);
+    min-height: 0;
     border-radius: 18px;
   }
-  @supports (height: 100dvh) {
-    .portfolio-chat-panel {
-      height: min(650px, calc(100dvh - 105px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
-      max-height: calc(100dvh - 105px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    }
+
+  .portfolio-chat-header {
+    gap: 8px;
+    padding: 12px;
   }
-  .portfolio-chat-header { gap: 8px; padding: 11px; }
-  .portfolio-chat-avatar { width: 36px; height: 36px; }
-  .portfolio-chat-voice-controls { gap: 4px; }
+
+  .portfolio-chat-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .portfolio-chat-voice-controls {
+    gap: 4px;
+  }
+
   .portfolio-chat-voice-controls button,
-  .portfolio-chat-close { width: 34px; height: 34px; }
-  .portfolio-chat-messages { padding: 13px 10px 8px; }
-  .chat-bubble { max-width: 88%; padding: 10px 11px; font-size: 13px; }
-  .portfolio-chat-quick-replies { gap: 6px; padding: 0 10px 9px; }
-  .portfolio-chat-quick-replies button { min-height: 34px; padding: 7px 9px; }
-  .portfolio-chat-input-area { gap: 7px; padding: 9px; }
-  .portfolio-chat-input-area input { min-height: 44px; padding: 9px 11px; }
+  .portfolio-chat-close {
+    width: 34px;
+    height: 34px;
+  }
+
+  .portfolio-chat-messages {
+    padding: 13px 10px 8px;
+  }
+
+  .chat-bubble {
+    max-width: 88%;
+    font-size: 13px;
+  }
+
+  .portfolio-chat-quick-replies {
+    gap: 6px;
+    padding: 0 10px 9px;
+  }
+
+  .portfolio-chat-input-area {
+    gap: 7px;
+    padding: 9px;
+  }
 }
 
-@media (max-width: 380px) {
-  .portfolio-chat-panel {
-    right: 7px;
-    width: calc(100vw - 14px);
-    bottom: calc(70px + env(safe-area-inset-bottom));
-  }
-  .portfolio-chat-header { gap: 6px; padding: 9px; }
-  .portfolio-chat-avatar { width: 32px; height: 32px; font-size: 16px; }
-  .portfolio-chat-heading strong { font-size: 12px; }
-  .portfolio-chat-heading span { font-size: 9px; }
-  .portfolio-chat-voice-controls { gap: 3px; }
-  .portfolio-chat-voice-controls button,
-  .portfolio-chat-close { width: 31px; height: 31px; border-radius: 8px; }
-  .portfolio-chat-quick-replies button { font-size: 10px; padding: 6px 8px; }
-  .chat-bubble { max-width: 90%; font-size: 12px; }
-}
+/* Short-height screens */
 
 @media (max-height: 520px) and (max-width: 900px) {
   .portfolio-chat-panel {
-    height: calc(100vh - 84px);
-    max-height: calc(100vh - 84px);
-    min-height: 0;
-    bottom: 68px;
+    height: calc(100dvh - 85px);
+    max-height: calc(100dvh - 85px);
+    bottom: 70px;
   }
-  @supports (height: 100dvh) {
-    .portfolio-chat-panel { height: calc(100dvh - 84px); max-height: calc(100dvh - 84px); }
+
+  .portfolio-chat-header {
+    padding: 8px 12px;
   }
-  .portfolio-chat-header { padding: 7px 10px; }
-  .portfolio-chat-avatar { width: 30px; height: 30px; }
-  .portfolio-chat-messages { padding-top: 7px; }
-  .portfolio-chat-quick-replies { padding-bottom: 5px; }
-  .portfolio-chat-footnote { display: none; }
+
+  .portfolio-chat-footnote {
+    display: none;
+  }
 }
+
+/* Accessibility */
 
 @media (prefers-reduced-motion: reduce) {
   .portfolio-chat-panel,
   .chat-message-row,
-  .chat-typing i,
-  .portfolio-chat-launcher { animation: none !important; transition: none !important; }
+  .chat-typing i {
+    animation: none !important;
+  }
 }
-      `}</style>
+`}</style>
 
     </div>
   );
